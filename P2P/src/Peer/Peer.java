@@ -11,58 +11,37 @@ import java.util.Scanner;
 
 
 public class Peer {
+	static final int INFORM=1;
+	static final int QUERY=2;
+	static final int EXIT=3;
+	
 	static int ack = -1;
 	private static int timeout = 3000;
-	private static boolean slowMode = true;
+	public static boolean slowMode = true;
 	static InetAddress serverAddress = null;
 	static int serverPort = 5000;
-	static int incPort = 4000;
+	static int serverIncPort = 4000;
+	static int fileIncPort = 3000; 
 	static PeerSender sender = new PeerSender();
-	static PeerReceiver receiver = new PeerReceiver("reciever", incPort);
+	static PeerReceiver receiver = new PeerReceiver("reciever", serverIncPort);
 	public static int packetSize = 128;
-	public static int headerSize = 8;
+	public static int headerSize = 10;
 	static String fileName = "files.txt";
 	static Scanner fileScan;
+	static PeerWindow window;
 	
 	public static void main(String[] args){
+		window = new PeerWindow();
 		try {
-			serverAddress = InetAddress.getByName(args[0]);
+			Peer.serverAddress = InetAddress.getByName(args[0]);
 		} catch (UnknownHostException e2) {
 			// TODO Auto-generated catch block
 			e2.printStackTrace();
 		}
 		
-		
-		receiver.start();
-		try {
-			fileScan = new Scanner(new File(fileName));
-		} catch (FileNotFoundException e1) {
-			e1.printStackTrace();
-		}
-		
-		byte[] data = new byte[1000];
-		for(int i=0; i<data.length; i++){
-			data[i]=(byte) (65+i%23);
-		}
-		ByteArrayInputStream byteStream = new ByteArrayInputStream(data);
-		
-		try {
-			sendFileData(fileScan);
-			System.out.println("ALL DATA SENT SUCCSSFULY");
-		}catch (IOException e) {
-				e.printStackTrace();
-		} catch (ConectionFailureException e) {
-			e.printStackTrace();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-		finally{
-			sender.stopSender();
-			receiver.stopListening();
-		}
 	}
 	
-	private static void sendFileData(Scanner fileScan) throws ConectionFailureException, IOException, InterruptedException{
+	public static void informAndUpdate(Scanner fileScan) throws ConectionFailureException, IOException, InterruptedException{
 		int failures = 0;
 		int failThreshold = 10;
 		int packetNumber = 0;
@@ -91,6 +70,7 @@ public class Peer {
 					if (payloadString.length()<packetSize-headerSize)
 		                payloadData = Arrays.copyOf(payloadData, packetSize-headerSize);
 					headerData = createHeader(payloadData,packetNumber,!fileScan.hasNext());
+					headerData[0]=INFORM;
 					System.arraycopy(headerData, 0, packetData, 0, headerData.length);
 			        System.arraycopy(payloadData, 0, packetData, headerData.length, payloadData.length);
 		            packetNumber++;
@@ -111,27 +91,81 @@ public class Peer {
 		throw new ConectionFailureException();
 	}
 	
-	/*
-	 * Header: 
-	 * [0-1] = packet number%65535
-	 * [2-5] = checksum
-	 * [6] = last packet(0,1)
-	 * [7] = '\n'
+	
+
+	/**
+	 * @throws InterruptedException 
+	 * @throws IOException 
+	 * 
+	 */
+	public static void exit() throws IOException, InterruptedException {
+		byte[] payloadData = new byte[packetSize-headerSize];
+		byte[] headerData = new byte[headerSize];
+		byte[] packetData = new byte[packetSize];
+		
+		sender.startSender(serverAddress, serverPort);
+		for(int i=0; i<payloadData.length; i++)
+			payloadData[i]=0;
+		headerData = createHeader(payloadData,0,true);
+		headerData[0]=EXIT;
+		System.arraycopy(headerData, 0, packetData, 0, headerData.length);
+        System.arraycopy(payloadData, 0, packetData, headerData.length, payloadData.length);
+        sender.rdtSend(packetData,timeout,slowMode);
+        sender.stopSender();
+	}
+
+	/**
+	 * @param text
+	 * @throws InterruptedException 
+	 * @throws IOException 
+	 */
+	public static void query(String fileName) throws IOException, InterruptedException {
+		byte[] payloadData = new byte[packetSize-headerSize];
+		byte[] headerData = new byte[headerSize];
+		byte[] packetData = new byte[packetSize];
+		int failures = 0;
+		int failThreshold = 10;
+		boolean responce=false;
+		
+		while(failures<failThreshold && responce==false){
+			sender.startSender(serverAddress, serverPort);
+			byte[] tempData = fileName.getBytes();
+			System.arraycopy(tempData, 0, payloadData, 0, tempData.length);
+			headerData = createHeader(payloadData,0,true);
+			headerData[0]=QUERY;
+			System.arraycopy(headerData, 0, packetData, 0, headerData.length);
+	        System.arraycopy(payloadData, 0, packetData, headerData.length, payloadData.length);
+	        if(sender.rdtSend(packetData,timeout,slowMode))
+	        	responce=true;
+	        else
+	        	failures++;
+		}
+        sender.stopSender();
+	}
+	
+	/**
+	 * Header:
+	 * [0] Method(1=inform and update,2=query,3=exit)
+	 * [2-2] = packet number%65535
+	 * [3-6] = checksum
+	 * [7] = last packet(0,1)
+	 * [8-9] = port number to use for file transfers
 	 */
 	public static byte[] createHeader(byte[] payloadData, int pktNum,boolean lastPacket){
 		byte[] header = new byte[headerSize];
 		pktNum = pktNum%65536;
-		header[0]=(byte) (pktNum/256);
-		header[1]=(byte) (pktNum%256);
+		header[1]=(byte) (pktNum/256);
+		header[2]=(byte) (pktNum%256);
 		Integer chkSum = (new String(payloadData)).hashCode();
-		for (int i = 2; i < 6; i++) {
-		    header[i] = (byte)(chkSum >>> (i * 8));
+		for (int i = 3; i < 7; i++) {
+		    header[i] = (byte)(chkSum >>> ((i-3) * 8));
 		}
 		if(lastPacket)
-			header[6]=1;
+			header[7]=1;
 		else
-			header[6]=0;
-		header[7]='\n';
+			header[7]=0;
+		header[8]=(byte) (fileIncPort/256);
+		header[9]=(byte) (fileIncPort%256);
 		return header;
 	}
 }

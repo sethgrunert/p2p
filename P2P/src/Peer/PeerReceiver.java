@@ -36,6 +36,14 @@ public class PeerReceiver extends Thread {
                 	System.out.println("Got ACK");
                 	Peer.ack = 1;
                 }
+                if(isOK(packet)){
+                	System.out.println("Query Successful");
+                	Peer.window.output.setText("at least one peer has a copy of the file");
+                }
+                else if(isERROR(packet)){
+                	System.out.println("Query Unsuccessful");
+                	Peer.window.output.setText("no peers with file");
+                }
             }
         } catch (Exception e) {
             stopListening();
@@ -45,5 +53,14 @@ public class PeerReceiver extends Thread {
     private static boolean isACK(DatagramPacket packet) throws UnknownHostException{
     	byte[] packetData = Arrays.copyOf(packet.getData(), packet.getLength());
 		return new String(packetData).contains("ACK") && packet.getAddress().equals(Peer.serverAddress);
+	}
+    
+    private static boolean isOK(DatagramPacket packet) throws UnknownHostException{
+    	byte[] packetData = Arrays.copyOf(packet.getData(), packet.getLength());
+		return new String(packetData).contains("200") && packet.getAddress().equals(Peer.serverAddress);
+	}
+    private static boolean isERROR(DatagramPacket packet) throws UnknownHostException{
+    	byte[] packetData = Arrays.copyOf(packet.getData(), packet.getLength());
+		return new String(packetData).contains("400") && packet.getAddress().equals(Peer.serverAddress);
 	}
 }
