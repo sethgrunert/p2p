@@ -6,7 +6,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.Arrays;
-
+import Peer.ConectionFailureException;
 import Peer.Peer;
 
 

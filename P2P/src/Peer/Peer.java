@@ -1,6 +1,4 @@
 package Peer;
-import ConectionFailureException;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -21,8 +19,8 @@ public class Peer {
 	static int incPort = 4000;
 	static PeerSender sender = new PeerSender();
 	static PeerReceiver receiver = new PeerReceiver("reciever", incPort);
-	static int packetSize = 128;
-	static int headerSize = 8;
+	public static int packetSize = 128;
+	public static int headerSize = 8;
 	static String fileName = "files.txt";
 	static Scanner fileScan;
 	
