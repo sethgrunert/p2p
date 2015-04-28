@@ -59,7 +59,13 @@ public class PeerWindow extends JFrame {
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			Peer.slowMode= slowMode.isSelected();
-			Peer.fileIncPort = Integer.parseInt(portField.getText());
+			if(Peer.fileReciever==null){
+				Peer.fileIncPort = Integer.parseInt(portField.getText());
+				Peer.fileReciever = new FileReceiver("fileReciever",Peer.fileIncPort);
+				portField.setEditable(false);
+				Peer.fileReciever.run();
+			}
+			
 			if(e.getSource()==informButton){
 				Peer.receiver = new PeerReceiver("reciever", Peer.serverIncPort);
 				Peer.receiver.start();

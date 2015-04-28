@@ -1,4 +1,4 @@
-The_Shawshank_Redemption 100
+The_Shawshank_Redemption.txt 100
 The_Godfather 200
 The_Godfather:_Part_II 300
 The_Dark_Knight 400

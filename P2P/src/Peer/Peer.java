@@ -29,11 +29,14 @@ public class Peer {
 	static String fileName = "files.txt";
 	static Scanner fileScan;
 	static PeerWindow window;
+	static FileSender fileSender= null;
+	static FileReceiver fileReciever = null;
 	
 	public static void main(String[] args){
 		window = new PeerWindow();
 		try {
-			Peer.serverAddress = InetAddress.getByName(args[0]);
+			serverAddress = InetAddress.getByName(args[0]);
+			
 		} catch (UnknownHostException e2) {
 			// TODO Auto-generated catch block
 			e2.printStackTrace();
