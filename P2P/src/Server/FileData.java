@@ -14,7 +14,7 @@ public class FileData {
 	private int size = 0;
 	private ArrayList<PeerData> peerList = new ArrayList<PeerData>();
 	
-	FileData(String fileName, int size){
+	public FileData(String fileName, int size){
 		this.fileName=fileName;
 		this.size=size;
 	}
@@ -25,6 +25,10 @@ public class FileData {
 	
 	public int getSize(){
 		return size;
+	}
+	
+	public void setSize(int size){
+		this.size=size;
 	}
 	
 	public void addPeer(PeerData p){

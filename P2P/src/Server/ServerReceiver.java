@@ -37,7 +37,7 @@ public class ServerReceiver extends Thread{
             
             System.out.println("server now accepting packets");
             while (true) {
-                byte[] buf = new byte[Peer.packetSize];
+                byte[] buf = new byte[Peer.PACKETSIZE];
                 DatagramPacket packet = new DatagramPacket(buf, buf.length);
                 receivingSocket.receive(packet);
                 handlePacket(packet);
@@ -52,6 +52,7 @@ public class ServerReceiver extends Thread{
     	System.out.println("Server Received Data from " + packet.getAddress().toString());
     	switch(packetData[0]){
     		case 1:
+    			Server.errorMessage="";
     			System.out.println("adding files to the database");
     			informAndUpdate(packet);
     			
@@ -74,11 +75,13 @@ public class ServerReceiver extends Thread{
 	 */
 	private static void exit(DatagramPacket packet) {
 		int filesRemoved=0;
-		currentPeer= new PeerData(packet.getAddress().getAddress(),3000);
+		int port=((0xFF & packet.getData()[8])<<8)|(0xFF & packet.getData()[9]);
+		System.out.println(port);
+		currentPeer = new PeerData(packet.getAddress().getAddress(),port);
     	for(int i=0; i<Server.files.size(); i++){
     		if(Server.files.get(i).deletePeer(currentPeer)){
     			filesRemoved++;
-    			if(Server.files.get(i).numPeers()!=0){
+    			if(Server.files.get(i).numPeers()==0){
     				Server.files.remove(i);
     				i--;
     			}
@@ -96,8 +99,8 @@ public class ServerReceiver extends Thread{
 	 */
 	private static void query(DatagramPacket packet) throws SocketException, IOException, InterruptedException {
 		byte[] packetData = Arrays.copyOf(packet.getData(), packet.getLength());
-		byte[] payloadData = new byte[Peer.packetSize-Peer.headerSize];
-    	System.arraycopy(packetData, Peer.headerSize, payloadData, 0, Peer.packetSize-Peer.headerSize);
+		byte[] payloadData = new byte[Peer.PACKETSIZE-Peer.HEADERSIZE];
+    	System.arraycopy(packetData, Peer.HEADERSIZE, payloadData, 0, Peer.PACKETSIZE-Peer.HEADERSIZE);
 		String fileName = "";
 		int i=0;
 		while(payloadData[i]!=0){
@@ -114,14 +117,14 @@ public class ServerReceiver extends Thread{
 		if(fileIndex==-1)
 			packetString+="400 ACK \n";
 		else{
-			packetString+="200 ACK";
+			packetString+="200 ACK ";
 			packetString+= Integer.toString(Server.files.get(fileIndex).getSize());
 			packetString+=" \n";
 			ArrayList<PeerData> peerList = Server.files.get(fileIndex).getPeers();
 			for(i=0; i<peerList.size(); i++){
 				packetString+= new String(peerList.get(i).getIP());
 				packetString+=" " + Integer.toString(peerList.get(i).getPort());
-				packetString+="\n";
+				packetString+=" \n";
 			}
 		}
 		packetData = packetString.getBytes();
@@ -130,7 +133,8 @@ public class ServerReceiver extends Thread{
 
 	public static void informAndUpdate(DatagramPacket packet) throws SocketException, IOException, InterruptedException{
     	byte[] packetData = Arrays.copyOf(packet.getData(), packet.getLength());
-    	currentPeer= new PeerData(packet.getAddress().getAddress(),3000);
+    	int port=((0xFF & packet.getData()[8])<<8)|(0xFF & packet.getData()[9]);
+    	currentPeer= new PeerData(packet.getAddress().getAddress(),port);
     	int peerNum = -1;
     	for(int i=0; i<peers.size(); i++){
     		if(peers.get(i).equals(currentPeer)){
@@ -146,8 +150,8 @@ public class ServerReceiver extends Thread{
     	int incPacketNumber = (packetData[1]*256+packetData[2]);
     	int oldCheckSum = ((0xFF & packetData[6]) << 24) | ((0xFF & packetData[5]) << 16) |
                 ((0xFF & packetData[4]) << 8) | (0xFF & packetData[3]);
-    	byte[] payloadData = new byte[Peer.packetSize-Peer.headerSize];
-    	System.arraycopy(packetData, Peer.headerSize, payloadData, 0, Peer.packetSize-Peer.headerSize);
+    	byte[] payloadData = new byte[Peer.PACKETSIZE-Peer.HEADERSIZE];
+    	System.arraycopy(packetData, Peer.HEADERSIZE, payloadData, 0, Peer.PACKETSIZE-Peer.HEADERSIZE);
     	if(incPacketNumber!=currentPeer.getACK()){
     		Server.errorMessage = "old data, ignoring packet" + " " + currentPeer.getACK() + " " + incPacketNumber;
     	}
@@ -192,11 +196,12 @@ public class ServerReceiver extends Thread{
 	    	currentPeer.incACK();
 	    	if(packetData[7]==1)
 	    		peers.remove(currentPeer);
+    	}
 	    	String s = "ACK";
             packetData = s.getBytes();
             if(Server.slowmode)
             	Thread.sleep(1000);
             Server.sender.rdtSend(packetData, packet.getAddress(), Server.peerPort);
-    	}
+    	
     }
 }

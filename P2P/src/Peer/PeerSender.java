@@ -41,21 +41,21 @@ public class PeerSender {
      *
      * @param data
      */
-    public boolean rdtSend(byte[] packetData, int timeout, boolean slowMode) throws SocketException, IOException, InterruptedException {
+    public boolean rdtSend(byte[] packetData, Peer p) throws SocketException, IOException, InterruptedException {
     	int timer=0;
-    	if(slowMode)
+    	if(p.slowMode)
         	Thread.sleep(1000);
         DatagramPacket packet = new DatagramPacket(packetData, packetData.length, internetAddress, receiverPortNumber);
         socket.send(packet);
-        while(timer<timeout && Peer.ack==-1){
+        while(timer<Peer.TIMEOUT && p.ack==-1){
         	Thread.sleep(1);
         	timer++;
         }
         
-        if(Peer.ack==-1)
+        if(p.ack==-1)
         	return false;
-        if(Peer.ack==1){
-        	Peer.ack=-1;
+        if(p.ack==1){
+        	p.ack=-1;
         	return true;
         }
         return false;

@@ -7,7 +7,7 @@ import java.util.ArrayList;
 
 public class Server {
 	static int serverPort = 5000;
-	static int peerPort = 4000;
+	static int peerPort = 6000;
 	static boolean slowmode = false;
 	static ServerSender sender = new ServerSender();
 	static ServerReceiver receiver = new ServerReceiver("receiver",serverPort);

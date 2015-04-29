@@ -13,7 +13,7 @@ public class PeerData {
 	private int nextACK = 0;
 	
 
-	PeerData(byte[] ip, int receivingPort){
+	public PeerData(byte[] ip, int receivingPort){
 		if(ip.length==4)
 			this.ip=ip;
 		else{

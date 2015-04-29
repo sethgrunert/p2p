@@ -17,20 +17,24 @@ import java.util.Scanner;
 
 import javax.swing.*;
 
+import Server.FileData;
+
 /**
  * @author Seth Grunert sethgrunert@my.ccsu.edu
  *
  */
 public class PeerWindow extends JFrame {
-	JCheckBox slowMode = new JCheckBox();
+	JCheckBox slowModeButton = new JCheckBox();
 	JButton informButton = new JButton("Inform and Update");
 	JButton queryButton = new JButton("Query");
 	JButton exitButton = new JButton("Exit");
 	public JTextField output = new JTextField("-----------------WAITING FOR INPUT-----------------");
 	JTextField input = new JTextField("enter query here");
-	JTextField portField = new JTextField("3000",5);
+	JTextField portField = new JTextField("",5);
+	Peer p = null;
 	
-	public PeerWindow(){
+	public PeerWindow(Peer p){
+		this.p=p;
 		this.setSize(300, 200);
 		this.setResizable(false);
 		this.setDefaultCloseOperation(this.EXIT_ON_CLOSE);
@@ -38,7 +42,7 @@ public class PeerWindow extends JFrame {
 		
 		JPanel canvas = new JPanel();
 		canvas.add(new JLabel("slowmode"));
-		canvas.add(slowMode);
+		canvas.add(slowModeButton);
 		informButton.addActionListener(new ButtonListener());
 		canvas.add(informButton);
 		canvas.add(input);
@@ -49,6 +53,7 @@ public class PeerWindow extends JFrame {
 		output.setEditable(false);
 		output.setMinimumSize(new Dimension(400, 15));
 		canvas.add(new JLabel("Enter port to transfer files on"));
+		portField.setText(Integer.toString(p.fileIncPort));
 		canvas.add(portField);
 		canvas.add(output);
 		this.add(canvas);
@@ -58,19 +63,20 @@ public class PeerWindow extends JFrame {
 		
 		@Override
 		public void actionPerformed(ActionEvent e) {
-			Peer.slowMode= slowMode.isSelected();
-			if(Peer.fileReciever==null){
-				Peer.fileIncPort = Integer.parseInt(portField.getText());
-				Peer.fileReciever = new FileReceiver("fileReciever",Peer.fileIncPort);
+			p.slowMode = slowModeButton.isSelected();
+			if(p.fileReciever==null){
+				p.fileIncPort = Integer.parseInt(portField.getText());
+				p.fileReciever = new FileReceiver("fileReciever",p.fileIncPort);
 				portField.setEditable(false);
-				Peer.fileReciever.run();
+				p.fileReciever.start();
 			}
 			
 			if(e.getSource()==informButton){
-				Peer.receiver = new PeerReceiver("reciever", Peer.serverIncPort);
-				Peer.receiver.start();
+				p.receiver = new PeerReceiver("reciever", Peer.SERVERINCPORT);
+				p.receiver.setPeer(p);
+				p.receiver.start();
 				try {
-					Peer.fileScan = new Scanner(new File(Peer.fileName));
+					p.fileScan = new Scanner(new File(p.fileList));
 				} catch (FileNotFoundException e1) {
 					e1.printStackTrace();
 				}
@@ -81,7 +87,7 @@ public class PeerWindow extends JFrame {
 				}
 				ByteArrayInputStream byteStream = new ByteArrayInputStream(data);
 				try {
-					Peer.informAndUpdate(Peer.fileScan);
+					p.informAndUpdate(p.fileScan);
 					output.setText("ALL DATA SENT SUCCSSFULY");
 				}catch (IOException ex) {
 					ex.printStackTrace();
@@ -91,15 +97,16 @@ public class PeerWindow extends JFrame {
 					ex.printStackTrace();
 				}
 				finally{
-					Peer.receiver.stopListening();
+					p.receiver.stopListening();
 				}
 			}
 			else if(e.getSource()==exitButton){
-				Peer.receiver = new PeerReceiver("reciever", Peer.serverIncPort);
-				Peer.receiver.start();
+				p.receiver = new PeerReceiver("reciever", Peer.SERVERINCPORT);
+				p.receiver.setPeer(p);
+				p.receiver.start();
 				try {
 					System.out.println("exiting");
-					Peer.exit();
+					p.exit();
 				} catch (SocketException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
@@ -114,15 +121,17 @@ public class PeerWindow extends JFrame {
 					e1.printStackTrace();
 				}
 				finally{
-					Peer.receiver.stopListening();
+					p.receiver.stopListening();
 				}
 			}
 			else if(e.getSource()==queryButton){
-				Peer.receiver = new PeerReceiver("reciever", Peer.serverIncPort);
-				Peer.receiver.start();
+				p.receiver = new PeerReceiver("reciever", Peer.SERVERINCPORT);
+				p.receiver.setPeer(p);
+				p.receiver.start();
 				try {
 					System.out.println("querying");
-					Peer.query(input.getText());
+					p.wantedFile = new FileData(input.getText(), 0);
+					p.query(input.getText());
 				} catch (SocketException e1) {
 					// TODO Auto-generated catch block
 					e1.printStackTrace();
@@ -137,7 +146,7 @@ public class PeerWindow extends JFrame {
 					e1.printStackTrace();
 				}
 				finally{
-					Peer.receiver.stopListening();
+					p.receiver.stopListening();
 				}
 			}
 		}
