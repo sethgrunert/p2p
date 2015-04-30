@@ -43,8 +43,8 @@ public class Peer{
 	Peer(){
 		numPeers++;
 		fileIncPort=10000+numPeers*1000;
-		folderName = "Peer"+Integer.toString(numPeers);
-		fileList=folderName+"/files.txt";
+		folderName = "Peer"+Integer.toString(numPeers)+"/";
+		fileList=folderName+"files.txt";
 	}
 	
 	public static void main(String[] args){

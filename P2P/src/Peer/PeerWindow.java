@@ -69,6 +69,7 @@ public class PeerWindow extends JFrame {
 				p.fileReciever = new FileReceiver("fileReciever",p.fileIncPort);
 				portField.setEditable(false);
 				p.fileReciever.start();
+				p.fileReciever.setPeer(p);
 			}
 			
 			if(e.getSource()==informButton){

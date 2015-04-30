@@ -1,4 +1,6 @@
 package Server;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 
 /**
@@ -13,6 +15,7 @@ public class FileData {
 	private String fileName = "";
 	private int size = 0;
 	private ArrayList<PeerData> peerList = new ArrayList<PeerData>();
+	private FileOutputStream out = null;
 	
 	public FileData(String fileName, int size){
 		this.fileName=fileName;
@@ -54,6 +57,20 @@ public class FileData {
 			peerList.remove(index);
 			return true;
 		}
+	}
+	
+	public void startOutputStream(String folderName){
+		if(out==null)
+			try {
+				out=new FileOutputStream(folderName+fileName);
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+	}
+	
+	public FileOutputStream getOutputStream(){
+		return out;
 	}
 	
 	public int numPeers(){

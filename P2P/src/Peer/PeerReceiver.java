@@ -76,7 +76,7 @@ public class PeerReceiver extends Thread {
             		}
             		p.fileSender = new FileSender();
             		p.fileSender.startSender(InetAddress.getByAddress(p.wantedFile.getPeers().get(0).getIP()), p.wantedFile.getPeers().get(0).getPort());
-            		p.fileSender.sendRequest();
+            		p.fileSender.sendRequest(p.wantedFile.getFileName(),p.fileIncPort);
                 }
                 else if(isERROR(packet)){
                 	System.out.println("Query Unsuccessful");
